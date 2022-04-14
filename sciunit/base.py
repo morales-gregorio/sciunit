@@ -156,18 +156,18 @@ class Versioned(object):
     is tracked. Provided in part by Andrew Davison in issue #53.
     """
 
-    def get_repo(self, cached: bool = True) -> Repo:
+    def get_repo(self, cached: bool = True):
         return 'Irrelevant'
 
-    def get_version(self, cached: bool = True) -> str:
+    def get_version(self, cached: bool = True):
         return 'Irrelevant'
 
     version = property(get_version)
 
-    def get_remote(self, remote_name: str = "origin", **kwargs) -> Remote:
+    def get_remote(self, remote_name: str = "origin", **kwargs):
         return 'Irrelevant'
 
-    def get_remote_url(self, remote: str = "origin", cached: bool = True) -> str:
+    def get_remote_url(self, remote: str = "origin", cached: bool = True):
         return 'Irrelevant'
 
     remote_url = property(get_remote_url)
