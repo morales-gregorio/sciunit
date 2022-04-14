@@ -26,12 +26,7 @@ except:
     __version__ = None
 
 import bs4
-import git
 from deepdiff import DeepDiff
-from git.cmd import Git
-from git.exc import GitCommandError, InvalidGitRepositoryError
-from git.remote import Remote
-from git.repo.base import Repo
 import jsonpickle
 import jsonpickle.ext.numpy as jsonpickle_numpy
 from jsonpickle.handlers import BaseHandler
@@ -162,114 +157,18 @@ class Versioned(object):
     """
 
     def get_repo(self, cached: bool = True) -> Repo:
-        """Get a git repository object for this instance.
-
-        Args:
-            cached (bool, optional): Whether to use cached data. Defaults to True.
-
-        Returns:
-            Repo: The git repo for this instance.
-        """
-        module = sys.modules[self.__module__]
-        # We use module.__file__ instead of module.__path__[0]
-        # to include modules without a __path__ attribute.
-        if hasattr(self.__class__, "_repo") and cached:
-            repo = self.__class__._repo
-        elif hasattr(module, "__file__"):
-            path = Path(module.__file__).resolve()
-            try:
-                repo = git.Repo(path, search_parent_directories=True)
-            except InvalidGitRepositoryError:
-                repo = None
-        else:
-            repo = None
-        self.__class__._repo = repo
-        return repo
+        return 'Irrelevant'
 
     def get_version(self, cached: bool = True) -> str:
-        """Get a git version (i.e. a git commit hash) for this instance.
-
-        Args:
-            cached (bool, optional): Whether to use the cached data. Defaults to True.
-
-        Returns:
-            str: The git version for this instance.
-        """
-        if cached and hasattr(self.__class__, "_version"):
-            version = self.__class__._version
-        else:
-            repo = self.get_repo()
-            if repo is not None:
-                head = repo.head
-                version = head.commit.hexsha
-                if repo.is_dirty():
-                    version += "*"
-            else:
-                version = None
-        self.__class__._version = version
-        return version
+        return 'Irrelevant'
 
     version = property(get_version)
 
     def get_remote(self, remote_name: str = "origin", **kwargs) -> Remote:
-        """Get a git remote object for this instance.
-
-        Args:
-            remote_name (str, optional): The remote Git repo. Defaults to 'origin'.
-
-        Returns:
-            Remote: The git remote object for this instance.
-        """
-        repo = kwargs["repo"] if "repo" in kwargs else self.get_repo()
-
-        if repo is None:
-            return None
-
-        if len(repo.remotes) == 0:
-            return None
-
-        matching = [r for r in repo.remotes if r.name == remote_name]
-        if (len(matching) > 0):
-            # => Remote with remote_name
-            return matching[0]
-        else:
-            # => just any first Remote
-            return repo.remotes[0]
+        return 'Irrelevant'
 
     def get_remote_url(self, remote: str = "origin", cached: bool = True) -> str:
-        """Get a git remote URL for this instance.
-
-        Args:
-            remote (str, optional): The remote Git repo. Defaults to 'origin'.
-            cached (bool, optional): Whether to use cached data. Defaults to True.
-
-        Raises:
-            ex: A Git command error.
-
-        Returns:
-            str: The git remote URL for this instance.
-        """
-        if hasattr(self.__class__, "_remote_url") and cached:
-            url = self.__class__._remote_url
-        else:
-            r = self.get_remote(remote)
-            try:
-                url = list(r.urls)[0]
-            except GitCommandError as ex:
-                if "correct access rights" in str(ex):
-                    # If ssh is not setup to access this repository
-                    cmd = ["git", "config", "--get", "remote.%s.url" % r.name]
-                    url = Git().execute(cmd)
-                else:
-                    raise ex
-            except AttributeError:
-                url = None
-            if url is not None and url.startswith("git@"):
-                domain = url.split("@")[1].split(":")[0]
-                path = url.split(":")[1]
-                url = "http://%s/%s" % (domain, path)
-        self.__class__._remote_url = url
-        return url
+        return 'Irrelevant'
 
     remote_url = property(get_remote_url)
 
@@ -280,7 +179,7 @@ class SciUnit(Versioned):
     def __init__(self):
         """Instantiate a SciUnit object."""
         pass
-    
+
     #: A list of attributes that cannot or should not be pickled.
     #: A URL where the code for this object can be found.
     _url = None
@@ -291,7 +190,7 @@ class SciUnit(Versioned):
     #: A class attribute containing a list of other attributes to be hidden
     # from state calculations
     state_hide = ['hash', 'pickling', 'temp_dir']
-    
+
 
     def __getstate__(self) -> dict:
         """Copy the object's state from self.__dict__.
@@ -303,7 +202,7 @@ class SciUnit(Versioned):
             dict: The state of this instance.
         """
         state = dict(inspect.getmembers(self))
-        
+
         state_hide = list(self.get_list_attr_with_bases("state_hide"))
         state_hide += ['state_hide']
         state = {k: v for k, v in state.items()
@@ -330,7 +229,7 @@ class SciUnit(Versioned):
         if keys:
             props &= set(keys)
         result = {prop: getattr(self, prop) for prop in props}
-        
+
         return result
 
     def property_names(self) -> list:
@@ -346,7 +245,7 @@ class SciUnit(Versioned):
         for base in bases:
             class_attrs = dir(base)
             class_props = set([p for p in class_attrs if isinstance(getattr(base, p, None), property)])
-            if issubclass(base, SciUnit):   
+            if issubclass(base, SciUnit):
                 sciunit_props |= class_props
             else:
                 other_props |= class_props
@@ -373,21 +272,21 @@ class SciUnit(Versioned):
         Returns:
             str: The Json format encoded sciunit instance.
         """
-        
+
         # Possible set jsonpickle handler options
         # This will also apply recursively to all nested objects
         for k, v in locals().items():
             if k != 'self':
                 if v is not None:
                     setattr(SciUnitHandler, k, v)
-        
+
         # Do the encoding
         result = jsonpickle.encode(self)
 
         # Possibly convert back to dict
         if not string:
             result = json.loads(result)
-        
+
         return result
 
     def diff(self, other, add_props=False):
@@ -498,25 +397,25 @@ class SciUnitHandler(BaseHandler):
     make_refs = False
     unpicklable = False
     string = True
-    
+
     def flatten(self, obj, data):
         """Flatten SciUnit objects"""
         state = obj.__getstate__()
         if self.add_props:
             state.update(obj.properties())
         result = self.context.flatten(state)
-        
+
         if self.unpicklable:
             data['py/object'] = obj.__class__.__name__
             data['py/state'] = result
         else:
-            data = self.simplify(result)    
+            data = self.simplify(result)
         data['hash'] = obj.hash(serialization=json.dumps(data))
         return data
 
     def restore(self, data):
         return NotImplemented
-    
+
     def simplify(self, d):
         """Set all 'py/' key:value pairs to their value"""
 
@@ -530,7 +429,7 @@ class SciUnitHandler(BaseHandler):
                     del d[key]
                 elif 'py/' in key:
                     d = d[key]
-                    break        
+                    break
         if isinstance(d, dict):
             for k, v in d.items():
                 d[k] = self.simplify(v)
@@ -550,7 +449,7 @@ class QuantitiesHandler(BaseHandler):
         else:
             data = result
         return data
-    
+
     def restore(self, data):
         """If jsonpickle.encode() is called with unpicklable=True then
         this method is used by jsonpickle.decode() to unserialize."""
@@ -572,7 +471,7 @@ class UnitQuantitiesHandler(BaseHandler):
         else:
             data = result
         return data
-    
+
     def restore(self, data):
         try:
             units = data['py/state']
